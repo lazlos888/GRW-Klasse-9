@@ -1,0 +1,96 @@
+<!doctype html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Bundestag und Opposition – Abschlussquiz</title>
+<style>
+  :root { --bg:#f4f7f8; --card:#ffffff; --text:#1e1e1e; --muted:#5f6b70; --navy:#12343b;
+          --accent:#e2711d; --ok:#1d7a3e; --ok-bg:#e3f3e8; --bad:#b3261e; --bad-bg:#fbe5e3; --line:#d5dee0; }
+  @media (prefers-color-scheme: dark) {
+    :root { --bg:#0f1c1f; --card:#18292d; --text:#eef3f4; --muted:#a9b8bc; --navy:#9fc3cb;
+            --accent:#f0954f; --ok:#7fd49b; --ok-bg:#183626; --bad:#f2a49d; --bad-bg:#3a1d1b; --line:#2c4247; }
+  }
+  * { box-sizing: border-box; }
+  body { margin:0; background:var(--bg); color:var(--text);
+         font: 17px/1.45 -apple-system, BlinkMacSystemFont, "Segoe UI", Arial, sans-serif; }
+  main { max-width: 640px; margin: 0 auto; padding: 20px 16px 48px; }
+  .course { color:var(--muted); font-size:14px; margin:0; }
+  h1 { color:var(--navy); font-size:24px; margin:4px 0 6px; }
+  .hint { color:var(--muted); font-size:15px; margin:0 0 18px; }
+  .q { background:var(--card); border:1px solid var(--line); border-radius:12px; padding:16px; margin-bottom:14px; }
+  .q h2 { font-size:17px; margin:0 0 12px; }
+  .q h2 span { color:var(--accent); margin-right:6px; }
+  button.opt { display:block; width:100%; text-align:left; font:inherit; color:inherit; background:transparent;
+               border:1px solid var(--line); border-radius:10px; padding:11px 12px; margin-bottom:8px; cursor:pointer; }
+  button.opt:disabled { cursor:default; }
+  button.opt.right { border-color:var(--ok); background:var(--ok-bg); font-weight:600; }
+  button.opt.wrong { border-color:var(--bad); background:var(--bad-bg); }
+  .explain { margin:6px 0 0; font-size:15px; }
+  .explain b.r { color:var(--ok); } .explain b.f { color:var(--bad); }
+  #result { background:var(--navy); color:#fff; border-radius:12px; padding:18px; text-align:center; display:none; }
+  @media (prefers-color-scheme: dark) { #result { color:#0f1c1f; } }
+  #result strong { display:block; font-size:30px; }
+  footer { color:var(--muted); font-size:13px; margin-top:22px; }
+</style>
+</head>
+<body>
+<main>
+  <p class="course">GRW · Klasse 9 · 05.11.2026</p>
+  <h1>Bundestag und Opposition – Abschlussquiz</h1>
+  <p class="hint">Tippe jeweils eine Antwort an. Du siehst sofort, ob sie stimmt. Merk dir die Fragen, bei denen du unsicher warst.</p>
+  <div id="quiz"></div>
+  <div id="result"><strong id="score"></strong><span id="verdict"></span></div>
+  <footer>Dieses Quiz speichert und sendet keine Daten. Grundlage: Lehrbuch, Grundgesetz.</footer>
+</main>
+<script>
+const QUESTIONS = [{"question": "Der Bundestag wählt die Bundeskanzlerin oder den Bundeskanzler. Welche Funktion ist das?", "options": ["Gesetzgebungsfunktion", "Wahlfunktion", "Artikulationsfunktion", "Kontrollfunktion"], "answer": 1, "explanation": "Die Wahl der Regierungschefin oder des Regierungschefs ist die Wahlfunktion des Bundestags."}, {"question": "Der Bundestag beschließt den Haushalt und bestimmt so, wie viel Geld die Regierung ausgeben darf. Zu welcher Funktion zählt das laut Buch?", "options": ["Kontrollfunktion", "Wahlfunktion", "Artikulationsfunktion", "Repräsentationsfunktion"], "answer": 0, "explanation": "Mit dem Haushalt teilt der Bundestag der Regierung das Geld zu und lässt sich vorher genau erklären, wofür es ausgegeben wird – eine Form der Kontrolle."}, {"question": "Wo wird laut Buch die eigentliche parlamentarische Arbeit geleistet?", "options": ["im Plenum", "im Bundesrat", "im Kanzleramt", "in den Ausschüssen"], "answer": 3, "explanation": "In den Ausschüssen werden Gesetzentwürfe beraten und formuliert, bevor das Plenum abstimmt."}, {"question": "Wie viele Abgeordnete braucht man mindestens, um im Bundestag eine Fraktion zu bilden?", "options": ["10 Abgeordnete", "5 Prozent der Abgeordneten", "ein Viertel der Abgeordneten", "die Hälfte der Abgeordneten"], "answer": 1, "explanation": "Eine Fraktion braucht mindestens 5 Prozent der Mitglieder des Bundestags."}, {"question": "Was ist laut Buch eine zentrale Aufgabe der Opposition?", "options": ["die Regierung kontrollieren und Alternativen aufzeigen", "der Regierung das Regieren unmöglich machen", "die Gesetze der Regierung immer unterstützen", "den Bundeskanzler ernennen"], "answer": 0, "explanation": "Die Opposition soll Schwachstellen benennen, Fehler beanstanden und zeigen, wie es anders ginge – nicht das Regieren verhindern."}, {"question": "Wer kann eine Kleine Anfrage an die Bundesregierung stellen?", "options": ["jede Bürgerin und jeder Bürger", "nur der Bundespräsident", "eine Fraktion oder 5 Prozent der Abgeordneten", "nur die Regierungsfraktionen"], "answer": 2, "explanation": "Kleine und Große Anfragen stellt eine Fraktion oder mindestens 5 Prozent der Abgeordneten. Die Regierung muss schriftlich antworten."}, {"question": "Wie viele Abgeordnete müssen einen Untersuchungsausschuss beantragen?", "options": ["eine Fraktion", "5 Prozent", "ein Viertel", "zwei Drittel"], "answer": 2, "explanation": "Laut Artikel 44 Grundgesetz muss der Bundestag einen Untersuchungsausschuss einsetzen, wenn ein Viertel seiner Mitglieder das beantragt."}, {"question": "Der Bundestag hat 630 Sitze. Wie viele Abgeordnete sind ein Viertel?", "options": ["126", "158", "210", "315"], "answer": 1, "explanation": "630 geteilt durch 4 sind 157,5 – also braucht man mindestens 158 Abgeordnete."}];
+const quiz = document.getElementById('quiz');
+let answered = 0, correct = 0;
+
+QUESTIONS.forEach((q, qi) => {
+  const box = document.createElement('section');
+  box.className = 'q';
+  const h = document.createElement('h2');
+  h.innerHTML = '<span>' + (qi + 1) + '/' + QUESTIONS.length + '</span>';
+  h.appendChild(document.createTextNode(q.question));
+  box.appendChild(h);
+  const buttons = q.options.map((text, oi) => {
+    const b = document.createElement('button');
+    b.className = 'opt';
+    b.type = 'button';
+    b.textContent = text;
+    b.addEventListener('click', () => choose(oi));
+    box.appendChild(b);
+    return b;
+  });
+  const explain = document.createElement('p');
+  explain.className = 'explain';
+  box.appendChild(explain);
+  quiz.appendChild(box);
+
+  function choose(oi) {
+    buttons.forEach(b => b.disabled = true);
+    buttons[q.answer].classList.add('right');
+    const isRight = oi === q.answer;
+    if (!isRight) buttons[oi].classList.add('wrong');
+    explain.innerHTML = isRight ? '<b class="r">Richtig.</b> ' : '<b class="f">Leider falsch.</b> ';
+    explain.appendChild(document.createTextNode(q.explanation));
+    answered++;
+    if (isRight) correct++;
+    if (answered === QUESTIONS.length) showResult();
+  }
+});
+
+function showResult() {
+  document.getElementById('score').textContent = correct + ' von ' + QUESTIONS.length + ' richtig';
+  document.getElementById('verdict').textContent = correct >= 7 ? 'Stark – du hast die Stunde sicher im Griff.'
+    : correct >= 5 ? 'Gut – schau dir die falschen Fragen noch einmal an.'
+    : 'Geh die Fragen mit deinem Arbeitsblatt noch einmal durch.';
+  const r = document.getElementById('result');
+  r.style.display = 'block';
+  r.scrollIntoView({ behavior: 'smooth' });
+}
+</script>
+</body>
+</html>
