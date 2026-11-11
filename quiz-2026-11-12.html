@@ -1,0 +1,158 @@
+<!doctype html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex">
+<title>Regierung bilden</title>
+<style>
+  :root { --navy:#12343B; --accent:#E2711D; --light:#EEF3F4; --muted:#5F6B70; --ok:#2E7D32; --bad:#B3261E; }
+  * { box-sizing: border-box; }
+  body { margin:0; font-family: Arial, Helvetica, sans-serif; background:#fff; color:#1E1E1E; font-size:17px; line-height:1.4; }
+  main { max-width: 640px; margin: 0 auto; padding: 16px; }
+  h1 { color: var(--navy); font-size: 26px; margin: 8px 0 4px; }
+  h2 { color: var(--navy); font-size: 21px; margin: 4px 0 8px; }
+  .kicker { color: var(--accent); font-weight: bold; font-size: 13px; letter-spacing: .04em; text-transform: uppercase; }
+  .box { background: var(--light); border-radius: 10px; padding: 14px; margin: 12px 0; }
+  .dark { background: var(--navy); color: #fff; }
+  button { font: inherit; cursor: pointer; border-radius: 10px; }
+  .main-btn { width: 100%; padding: 14px; border: 0; background: var(--accent); color: #fff; font-weight: bold; font-size: 18px; margin-top: 12px; }
+  .main-btn:disabled { background: #C9D6D9; color: #5F6B70; cursor: default; }
+  .parties { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+  .party { padding: 12px 10px; border: 2px solid var(--navy); background: #fff; color: var(--navy); text-align: left; }
+  .party b { display: block; font-size: 17px; }
+  .party span { font-size: 15px; }
+  .party[aria-pressed="true"] { background: var(--navy); color: #fff; }
+  .party:disabled { cursor: default; }
+  .bar { position: relative; height: 26px; background: var(--light); border-radius: 13px; overflow: hidden; margin: 14px 0 4px; }
+  .fill { height: 100%; width: 0; background: var(--navy); transition: width .25s; }
+  .fill.reached { background: var(--ok); }
+  .mark { position: absolute; top: -4px; bottom: -4px; width: 3px; background: var(--accent); }
+  .status { font-weight: bold; color: var(--navy); min-height: 1.4em; }
+  .small { font-size: 14px; color: var(--muted); }
+  .result-ok { color: var(--ok); font-weight: bold; }
+  .star { color: var(--accent); font-weight: bold; }
+  ul { padding-left: 20px; margin: 6px 0; }
+</style>
+</head>
+<body>
+<main id="app" aria-live="polite"></main>
+<script>
+// Spieldaten: endgültige Sitzverteilungen laut Die Bundeswahlleiterin (Bundestagswahlen 2013, 2017, 2021)
+// SPIELDATEN-BEGINN
+const RUNDEN = [
+  { jahr: 2013, gesamt: 631, mehrheit: 316,
+    parteien: [['CDU/CSU', 311], ['SPD', 193], ['Linke', 64], ['Grüne', 63]],
+    echt: ['CDU/CSU', 'SPD'],
+    geschehen: 'CDU/CSU und SPD (504 Sitze) bildeten eine Koalition. Angela Merkel (CDU) wurde am 17.12.2013 zur Kanzlerin gewählt. Die Union hatte die absolute Mehrheit um nur 5 Sitze verpasst.' },
+  { jahr: 2017, gesamt: 709, mehrheit: 355,
+    parteien: [['CDU/CSU', 246], ['SPD', 153], ['AfD', 94], ['FDP', 80], ['Linke', 69], ['Grüne', 67]],
+    echt: ['CDU/CSU', 'SPD'],
+    versucht: ['CDU/CSU', 'FDP', 'Grüne'],
+    geschehen: 'Zuerst verhandelten CDU/CSU, FDP und Grüne über eine „Jamaika“-Koalition (393 Sitze). Die FDP brach die Gespräche am 19.11.2017 ab. Danach bildeten CDU/CSU und SPD (399 Sitze) eine Koalition – Angela Merkel wurde erst am 14.03.2018 gewählt.' },
+  { jahr: 2021, gesamt: 736, mehrheit: 369,
+    parteien: [['SPD', 206], ['CDU/CSU', 197], ['Grüne', 118], ['FDP', 92], ['AfD', 83], ['Linke', 39], ['SSW', 1]],
+    echt: ['SPD', 'Grüne', 'FDP'],
+    geschehen: 'SPD, Grüne und FDP (416 Sitze) bildeten die „Ampel“. Olaf Scholz (SPD) wurde am 08.12.2021 zum Kanzler gewählt. Die Ampel zerbrach im November 2024.' }
+];
+// SPIELDATEN-ENDE
+
+// Logik (ohne DOM, wird im Test geprüft)
+function summe(runde, auswahl) {
+  return runde.parteien.filter(p => auswahl.includes(p[0])).reduce((s, p) => s + p[1], 0);
+}
+function ueberfluessig(runde, auswahl) {
+  // Parteien, ohne die die Auswahl trotzdem eine Mehrheit hätte
+  const s = summe(runde, auswahl);
+  return runde.parteien.filter(p => auswahl.includes(p[0]) && s - p[1] >= runde.mehrheit).map(p => p[0]);
+}
+function gleicheMenge(a, b) {
+  return a.length === b.length && a.every(x => b.includes(x));
+}
+
+if (typeof document !== 'undefined') {
+  const app = document.getElementById('app');
+  let r = 0, auswahl = [], treffer = 0;
+  const esc = s => String(s).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
+
+  function start() {
+    app.innerHTML = `
+      <div class="kicker">GRW · Klasse 9 · Abschlussspiel</div>
+      <h1>Regierung bilden</h1>
+      <div class="box">Ihr habt die Bundestagswahl gewonnen – aber allein reicht es nicht.
+        <ul><li>Tippt Parteien an, bis eure Koalition die <b>Mehrheit</b> im Bundestag hat.</li>
+        <li>Drei Runden mit den echten Ergebnissen von <b>2013, 2017 und 2021</b>.</li>
+        <li>Danach seht ihr, welche Regierung es wirklich wurde.</li></ul></div>
+      <button class="main-btn" id="los">Los geht’s</button>
+      <p class="small">Diese Seite speichert und sendet keine Daten.</p>`;
+    document.getElementById('los').onclick = () => { r = 0; treffer = 0; runde(); };
+  }
+
+  function runde() {
+    auswahl = [];
+    const R = RUNDEN[r];
+    app.innerHTML = `
+      <div class="kicker">Runde ${r + 1} von ${RUNDEN.length}</div>
+      <h2>Bundestagswahl ${R.jahr}</h2>
+      <p>${R.gesamt} Sitze. Für die Kanzlerwahl braucht ihr die Mehrheit: <b>${R.mehrheit} Sitze</b>.</p>
+      <div class="parties">${R.parteien.map(p =>
+        `<button class="party" aria-pressed="false" data-p="${esc(p[0])}"><b>${esc(p[0])}</b><span>${p[1]} Sitze</span></button>`).join('')}</div>
+      <div class="bar"><div class="fill" id="fill"></div><div class="mark" style="left:${(R.mehrheit / R.gesamt * 100).toFixed(1)}%"></div></div>
+      <div class="status" id="status"></div>
+      <button class="main-btn" id="bilden" disabled>Regierung bilden</button>`;
+    app.querySelectorAll('.party').forEach(b => b.onclick = () => {
+      const name = b.dataset.p;
+      auswahl = auswahl.includes(name) ? auswahl.filter(x => x !== name) : auswahl.concat(name);
+      b.setAttribute('aria-pressed', auswahl.includes(name));
+      zeige();
+    });
+    document.getElementById('bilden').onclick = auswerten;
+    zeige();
+  }
+
+  function zeige() {
+    const R = RUNDEN[r], s = summe(R, auswahl), ok = s >= R.mehrheit;
+    const fill = document.getElementById('fill');
+    fill.style.width = Math.min(100, s / R.gesamt * 100) + '%';
+    fill.classList.toggle('reached', ok);
+    document.getElementById('status').textContent = auswahl.length === 0
+      ? 'Tippt die Parteien eurer Koalition an.'
+      : ok ? `${s} Sitze – Mehrheit erreicht!` : `${s} Sitze – es fehlen noch ${R.mehrheit - s}.`;
+    document.getElementById('bilden').disabled = !ok;
+  }
+
+  function auswerten() {
+    const R = RUNDEN[r], s = summe(R, auswahl), extra = ueberfluessig(R, auswahl);
+    const getroffen = gleicheMenge(auswahl, R.echt);
+    if (getroffen) treffer++;
+    app.querySelectorAll('.party').forEach(b => b.disabled = true);
+    document.getElementById('bilden').remove();
+    let html = `<div class="box"><p class="result-ok">Eure Koalition: ${auswahl.map(esc).join(' + ')} = ${s} Sitze.</p>
+      <p>Rechnerisch reicht das. Ob Parteien wirklich zusammenarbeiten, entscheiden sie selbst – sie müssen sich auf ein gemeinsames Programm einigen.</p>`;
+    if (extra.length) html += `<p>Übrigens: Auch ohne ${extra.map(esc).join(' oder ')} hättet ihr eine Mehrheit gehabt. Jeder Partner mehr heißt: mehr Kompromisse.</p>`;
+    html += `</div><div class="box dark"><div class="kicker">Was wirklich geschah</div><p>${R.geschehen}</p>`;
+    if (getroffen) html += `<p class="star">★ Ihr habt die echte Regierung getroffen!</p>`;
+    else if (R.versucht && gleicheMenge(auswahl, R.versucht)) html += `<p class="star">Genau diese Koalition wurde 2017 zuerst versucht – sie scheiterte.</p>`;
+    html += `</div><button class="main-btn" id="weiter">${r + 1 < RUNDEN.length ? 'Nächste Runde' : 'Zum Ergebnis'}</button>`;
+    app.insertAdjacentHTML('beforeend', html);
+    document.getElementById('weiter').onclick = () => { r++; r < RUNDEN.length ? runde() : ende(); };
+    document.getElementById('weiter').scrollIntoView({ behavior: 'smooth', block: 'end' });
+  }
+
+  function ende() {
+    app.innerHTML = `
+      <div class="kicker">Ergebnis</div>
+      <h1>${treffer} von ${RUNDEN.length} echten Regierungen getroffen</h1>
+      <div class="box dark"><p><b>Merkt euch:</b> In keiner Runde hatte eine Partei allein die Mehrheit. Deshalb braucht der Kanzler eine Koalition – und kann nicht allein regieren.</p></div>
+      <div class="box"><b>Wo war es am schwierigsten – und warum?</b> Sagt es gleich in der Klasse.</div>
+      <button class="main-btn" id="nochmal">Nochmal spielen</button>
+      <p class="small">Sitzzahlen: Die Bundeswahlleiterin, endgültige Ergebnisse der Bundestagswahlen 2013, 2017 und 2021. Diese Seite speichert und sendet keine Daten.</p>`;
+    document.getElementById('nochmal').onclick = start;
+  }
+
+  start();
+}
+if (typeof module !== 'undefined') module.exports = { RUNDEN, summe, ueberfluessig, gleicheMenge };
+</script>
+</body>
+</html>
