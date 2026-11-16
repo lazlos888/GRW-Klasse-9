@@ -1,0 +1,206 @@
+<!doctype html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'unsafe-inline'; script-src 'unsafe-inline'; base-uri 'none'; form-action 'none'">
+<title>Ihr seid der Bundesrat</title>
+<style>
+  :root { --bg:#f4f7f8; --card:#ffffff; --text:#1e1e1e; --muted:#5f6b70; --navy:#12343b; --on-navy:#ffffff;
+          --accent:#b8560f; --ok:#1d7a3e; --ok-bg:#e3f3e8; --bad:#b3261e; --bad-bg:#fbe5e3; --line:#b9c6c9; --soft:#eef3f4; }
+  @media (prefers-color-scheme: dark) {
+    :root { --bg:#0f1c1f; --card:#18292d; --text:#eef3f4; --muted:#a9b8bc; --navy:#9fc3cb; --on-navy:#0f1c1f;
+            --accent:#f0954f; --ok:#7fd49b; --ok-bg:#183626; --bad:#f2a49d; --bad-bg:#3a1d1b; --line:#3d575d; --soft:#1f3338; }
+  }
+  * { box-sizing: border-box; }
+  html { -webkit-text-size-adjust: 100%; text-size-adjust: 100%; }
+  body { margin:0; background:var(--bg); color:var(--text); overflow-wrap:break-word;
+         font: 17px/1.45 -apple-system, BlinkMacSystemFont, "Segoe UI", Arial, sans-serif; }
+  main { max-width: 640px; margin: 0 auto; padding: 16px 16px 48px; }
+  .course { color:var(--muted); font-size:14px; margin:0; }
+  h1 { color:var(--navy); font-size:24px; margin:2px 0 12px; }
+  .bar { height:6px; background:var(--line); border-radius:3px; margin-bottom:14px; overflow:hidden; }
+  .bar div { height:100%; width:0; background:var(--accent); transition:width .3s; }
+  .card { background:var(--card); border:1px solid var(--line); border-radius:12px; padding:16px; margin-bottom:14px; }
+  .label { color:var(--accent); font-size:13px; font-weight:700; letter-spacing:.04em; text-transform:uppercase; margin:0 0 4px; }
+  .card h2 { font-size:20px; margin:0 0 8px; color:var(--navy); }
+  .card p { margin:0 0 12px; }
+  .card p.rule { color:var(--muted); font-size:15px; margin-bottom:4px; }
+  .card p.step { font-weight:700; margin:16px 0 10px; }
+  button { font:inherit; color:inherit; touch-action:manipulation; -webkit-tap-highlight-color:transparent; }
+  button.opt { display:block; width:100%; min-height:56px; text-align:left; background:transparent; color:var(--text);
+               border:2px solid var(--line); border-radius:12px; padding:14px; margin-bottom:10px; cursor:pointer; }
+  button.opt:disabled { cursor:default; color:var(--text); -webkit-text-fill-color:currentColor; opacity:1; }
+  button.opt.right { border-color:var(--ok); background:var(--ok-bg); font-weight:600; }
+  button.opt.right::before { content:"✓ "; color:var(--ok); font-weight:700; }
+  button.opt.wrong { border-color:var(--bad); background:var(--bad-bg); }
+  button.opt.wrong::before { content:"✗ "; color:var(--bad); font-weight:700; }
+  button:focus-visible { outline:3px solid var(--accent); outline-offset:2px; }
+  .card p.fb { margin:4px 0 0; font-size:15px; font-weight:600; }
+  .fb.r { color:var(--ok); } .fb.f { color:var(--bad); }
+  .real { background:var(--soft); border-radius:10px; padding:12px; margin-top:12px; font-size:16px; }
+  .real b { display:block; color:var(--accent); font-size:13px; letter-spacing:.04em; text-transform:uppercase; margin-bottom:2px; }
+  button.next { display:block; width:100%; min-height:56px; background:var(--navy); color:var(--on-navy); border:0; border-radius:12px;
+                padding:14px; font-weight:700; margin-top:14px; cursor:pointer; }
+  #result { background:var(--navy); color:var(--on-navy); border-radius:12px; padding:20px 18px; text-align:center; }
+  #result strong { display:block; font-size:30px; margin-bottom:6px; }
+  #result small { display:block; margin-top:10px; font-size:15px; opacity:.9; }
+  footer { color:var(--muted); font-size:13px; margin-top:22px; }
+</style>
+</head>
+<body>
+<main>
+  <p class="course">GRW · Klasse 9 · 19.11.2026</p>
+  <h1>Ihr seid der Bundesrat</h1>
+  <div class="bar"><div id="progress"></div></div>
+  <div id="stage" aria-live="polite"></div>
+  <noscript><p>Dieses Spiel braucht JavaScript. Bitte im Browser einschalten.</p></noscript>
+  <footer>Keine Daten werden gespeichert. Quellen: Plenarprotokolle des Bundesrats (bundesrat.de), Grundgesetz.</footer>
+</main>
+<script>
+const INTRO = "Vier echte Fälle. Entscheide zuerst, wähle dann die beste Begründung. Danach erfährst du, was wirklich geschah. Zum Schluss: drei Fragen zur letzten Stunde.";
+const CASES = [{"name": "DigitalPakt", "date": "14. Dezember 2018", "text": "Der Bundestag hat das Grundgesetz geändert: Der Bund darf den Ländern 5 Milliarden Euro für WLAN und digitale Geräte an Schulen geben. Aber: Bei künftigen Hilfen des Bundes sollen die Länder immer die Hälfte selbst zahlen. Ohne den Bundesrat kann das Grundgesetz nicht geändert werden. Ihr seid der Bundesrat – was tut ihr?", "decisions": ["Den Vermittlungsausschuss anrufen.", "Zustimmen – Hauptsache, das Geld kommt schnell.", "Das Gesetz endgültig ablehnen."], "reasons": ["Die Länder wollen das Geld, aber nicht die Pflicht, künftig immer die Hälfte zu zahlen. Im Vermittlungsausschuss kann ein Kompromiss gefunden werden.", "Schulen brauchen kein WLAN, deshalb soll gar kein Geld fließen.", "Der Bundesrat darf Gesetze des Bundestags allein umschreiben."], "real": "Am 14.12.2018 verlangten alle 16 Länder einstimmig den Vermittlungsausschuss. Am 20.02.2019 stand der Kompromiss: keine feste 50-Prozent-Regel. Am 15.03.2019 stimmte der Bundesrat mit allen 69 Stimmen zu."}, {"name": "Cannabisgesetz", "date": "22. März 2024", "text": "Der Bundesrat stimmt ab, ob er zum Cannabisgesetz den Vermittlungsausschuss anruft. Sachsen wird aufgerufen. Der Ministerpräsident sagt: ‚Ich möchte den Vermittlungsausschuss anrufen!‘ Ein Minister ruft: ‚Widerspruch!‘ Ein weiterer Minister sagt: ‚Enthaltung!‘ Ihr leitet die Sitzung – wie zählt ihr Sachsens vier Stimmen?", "decisions": ["Als ungültig.", "Als vier Ja-Stimmen – der Ministerpräsident entscheidet.", "Geteilt: zwei Ja, eine Nein, eine Enthaltung."], "reasons": ["Ein Land kann seine Stimmen nur einheitlich abgeben. So steht es im Grundgesetz (Artikel 51).", "Im Bundesrat darf nur der Ministerpräsident abstimmen.", "Bei Streit entscheidet die Mehrheit der anwesenden Minister."], "real": "Die Präsidentin des Bundesrats stellte fest, dass Sachsen ‚nicht einheitlich und somit ungültig abgestimmt hat‘. Nur vier Länder mit zusammen 19 Stimmen wollten den Vermittlungsausschuss – nötig wären 35 gewesen. Das Gesetz trat am 1. April 2024 in Kraft."}, {"name": "Grundgesetzänderung", "date": "21. März 2025", "text": "Das Grundgesetz soll geändert werden: mehr Schulden für die Verteidigung und 500 Milliarden Euro für Infrastruktur und Klimaschutz, davon 100 Milliarden für die Länder. Im Bundesrat sind dafür 46 von 69 Stimmen nötig. Die Regierung eures Landes ist sich nicht einig und enthält sich. Wie wirkt eure Enthaltung?", "decisions": ["Wie ein Nein.", "Wie ein Ja.", "Gar nicht – sie wird herausgerechnet."], "reasons": ["Es zählen nur die Ja-Stimmen. Wer sich enthält, fehlt bei den nötigen 46.", "Enthaltungen werden zur Hälfte als Ja gezählt.", "Enthaltungen sind im Bundesrat verboten."], "real": "Es gab 53 Ja-Stimmen – genug. Brandenburg, Rheinland-Pfalz, Sachsen-Anhalt und Thüringen enthielten sich. Kein Land stimmte mit Nein. Sachsen stimmte zu."}, {"name": "Bürgergeld", "date": "14. November 2022", "text": "Der Bundestag hat das Bürgergeld beschlossen. Es ist ein Zustimmungsgesetz. Im Bundesrat kommen die nötigen 35 Ja-Stimmen nicht zusammen. Was passiert jetzt mit dem Gesetz?", "decisions": ["Es ist gestoppt, bis ein Kompromiss gefunden ist.", "Es tritt trotzdem in Kraft.", "Der Bundestag überstimmt den Bundesrat."], "reasons": ["Ein Zustimmungsgesetz kommt nur mit dem Ja des Bundesrats zustande.", "Der Bundesrat steht immer über dem Bundestag.", "Gesetze über Geld macht allein der Bundesrat."], "real": "Die Bundesregierung rief den Vermittlungsausschuss an. Am 23.11.2022 einigte er sich auf einen Kompromiss. Am 25.11.2022 stimmte der Bundesrat zu. Das Bürgergeld gilt seit dem 1. Januar 2023."}];
+const REVIEW = [{"question": "Der Bundestag hat 630 Abgeordnete. Wie viele Stimmen braucht ein Kanzler bei seiner Wahl (Kanzlermehrheit)?", "options": ["316", "315", "420"], "explanation": "Mehr als die Hälfte der Mitglieder: 316."}, {"question": "Was bedeutet das Ressortprinzip?", "options": ["Jede Ministerin und jeder Minister leitet das eigene Ministerium selbstständig.", "Der Kanzler bestimmt die Richtlinien der Politik.", "Das Kabinett entscheidet gemeinsam."], "explanation": "Die anderen beiden sind das Kanzlerprinzip und das Kollegialprinzip."}, {"question": "Was ist eine Koalition?", "options": ["Ein Bündnis mehrerer Parteien, um gemeinsam zu regieren.", "Alle Abgeordneten einer Partei im Bundestag.", "Die Parteien, die nicht regieren."], "explanation": "Alle Abgeordneten einer Partei bilden eine Fraktion; wer nicht regiert, ist Opposition."}];
+const STEPS = CASES.length + REVIEW.length;
+const TOTAL = CASES.length * 2 + REVIEW.length;
+const TAP_GUARD_MS = 400;
+const stage = document.getElementById('stage');
+const progress = document.getElementById('progress');
+let points = 0, index = -1, readyAt = 0;
+
+function el(tag, cls, text) {
+  const e = document.createElement(tag);
+  if (cls) e.className = cls;
+  if (text) e.textContent = text;
+  return e;
+}
+
+// Kurz nach einem Seitenwechsel zählen Tipper nicht – sonst trifft ein Doppeltipp auf „Weiter“ versehentlich eine Antwort
+function tap(button, handler) {
+  button.type = 'button';
+  button.addEventListener('click', () => {
+    if (Date.now() < readyAt) return;
+    handler();
+  });
+}
+
+// Reihenfolge der Antworten mischen, die richtige bleibt über ihren Index erkennbar
+function shuffled(n) {
+  const order = [];
+  for (let i = 0; i < n; i++) order.push(i);
+  for (let i = n - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    const t = order[i]; order[i] = order[j]; order[j] = t;
+  }
+  return order;
+}
+
+function clearStage() {
+  while (stage.children.length) stage.removeChild(stage.children[0]);
+}
+
+function nextButton(card) {
+  const b = el('button', 'next', index === STEPS - 1 ? 'Zum Ergebnis' : 'Weiter');
+  tap(b, () => { index++; show(); });
+  card.appendChild(b);
+}
+
+// texts[0] ist die richtige Antwort; done(true/false) wird nach dem Antippen aufgerufen
+function options(card, texts, done) {
+  const order = shuffled(texts.length);
+  const buttons = order.map(i => {
+    const b = el('button', 'opt', texts[i]);
+    tap(b, () => {
+      buttons.forEach(x => { x.disabled = true; });
+      buttons[order.indexOf(0)].classList.add('right');
+      if (i !== 0) b.classList.add('wrong');
+      done(i === 0);
+    });
+    card.appendChild(b);
+    return b;
+  });
+}
+
+function realBox(card, title, text) {
+  const real = el('div', 'real');
+  if (title) real.appendChild(el('b', '', title));
+  real.appendChild(document.createTextNode(text));
+  card.appendChild(real);
+}
+
+function showStart() {
+  const card = el('section', 'card');
+  card.appendChild(el('p', 'label', 'So geht es'));
+  card.appendChild(el('p', '', INTRO));
+  card.appendChild(el('p', 'rule', 'Pro Fall 2 Punkte, pro Frage 1 Punkt. Maximal ' + TOTAL + ' Punkte.'));
+  const b = el('button', 'next', 'Start');
+  tap(b, () => { index = 0; show(); });
+  card.appendChild(b);
+  stage.appendChild(card);
+}
+
+function showCase(c, number) {
+  const card = el('section', 'card');
+  card.appendChild(el('p', 'label', 'Fall ' + number + ' von ' + CASES.length + ' · ' + c.date));
+  card.appendChild(el('h2', '', c.name));
+  card.appendChild(el('p', '', c.text));
+  card.appendChild(el('p', 'step', '1. Entscheide:'));
+  options(card, c.decisions, ok => {
+    if (ok) points++;
+    card.appendChild(el('p', ok ? 'fb r' : 'fb f', ok ? 'Richtig.'
+      : 'Nicht ganz. Richtig ist: „' + c.decisions[0] + '“ Warum? Das zeigt Schritt 2.'));
+    card.appendChild(el('p', 'step', '2. Wähle die beste Begründung:'));
+    options(card, c.reasons, right => {
+      if (right) points++;
+      card.appendChild(el('p', right ? 'fb r' : 'fb f', right ? 'Genau.'
+        : 'Nicht ganz. Richtig ist die grüne Begründung mit dem Haken. Lies unten, was wirklich geschah.'));
+      realBox(card, 'Was wirklich geschah', c.real);
+      nextButton(card);
+    });
+  });
+  stage.appendChild(card);
+}
+
+function showReview(q, number) {
+  const card = el('section', 'card');
+  card.appendChild(el('p', 'label', 'Wiederholung ' + number + ' von ' + REVIEW.length + ' · letzte Stunde'));
+  card.appendChild(el('h2', '', q.question));
+  options(card, q.options, right => {
+    if (right) points++;
+    card.appendChild(el('p', right ? 'fb r' : 'fb f', right ? 'Richtig.'
+      : 'Leider falsch. Richtig ist die grüne Antwort mit dem Haken.'));
+    realBox(card, '', q.explanation);
+    nextButton(card);
+  });
+  stage.appendChild(card);
+}
+
+function showResult() {
+  const r = el('div', '');
+  r.id = 'result';
+  r.appendChild(el('strong', '', points + ' von ' + TOTAL + ' Punkten'));
+  r.appendChild(el('span', '', points >= 9 ? 'Stark! Du kennst dich im Bundesrat richtig gut aus.'
+    : points >= 6 ? 'Gut gemacht! Vieles sitzt schon. Schau dir die Fälle noch einmal an, bei denen du unsicher warst.'
+    : 'Ein Anfang ist gemacht. Spiel noch eine Runde – beim zweiten Mal klappt es besser.'));
+  r.appendChild(el('small', '', 'Welcher Fall hat dich überrascht? Merk ihn dir – wir sprechen gleich darüber.'));
+  stage.appendChild(r);
+  const again = el('button', 'next', 'Noch einmal');
+  tap(again, () => { points = 0; index = 0; show(); });
+  stage.appendChild(again);
+}
+
+function show() {
+  clearStage();
+  readyAt = Date.now() + TAP_GUARD_MS;
+  progress.style.width = Math.round(Math.max(index, 0) / STEPS * 100) + '%';
+  if (index < 0) showStart();
+  else if (index < CASES.length) showCase(CASES[index], index + 1);
+  else if (index < STEPS) showReview(REVIEW[index - CASES.length], index - CASES.length + 1);
+  else showResult();
+  if (index >= 0) window.scrollTo(0, 0);
+}
+
+show();
+</script>
+</body>
+</html>
